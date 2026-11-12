@@ -100,7 +100,7 @@ ty_le_hai_long <- round(prop.table(bang_cheo, margin = 1)[,"TRUE"] * 100,2)
 bang_season_happy <- cbind(bang_cheo,"Tỷ lệ hài lòng (%)" = ty_le_hai_long)
 print(bang_season_happy)
 
-bang_cheo_1 <- table(new_data$is_happy_customer,new_data$is_expedited_delivery)
+bang_cheo_1 <- table(new_data$is_expedited_delivery,new_data$is_happy_customer)
 ty_le_hai_long_1 <- round(prop.table(bang_cheo_1, margin = 1)[,"TRUE"] * 100,2)
 bang_is_expedited_delivery_happy <- cbind(bang_cheo_1,"Tỷ lệ hài lòng (%)" = ty_le_hai_long_1)
 print(bang_is_expedited_delivery_happy)
