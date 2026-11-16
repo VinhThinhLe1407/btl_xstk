@@ -171,9 +171,6 @@ ggplot(new_data,aes(x = is_expedited_delivery,fill = is_happy_customer)) +geom_b
 
 new_data$coupon_discount_factor <- as.factor(new_data$coupon_discount)  
 
-anova_order <- aov(order_total ~ season * coupon_discount_factor,data = new_data)
-residuals_order <- residuals(anova_order)
-
 cat("\n[1] ĐÁNH GIÁ TÍNH ĐỘC LẬP:\n")
 par(mfrow = c(1, 1))
 plot(residuals_order, type = "p", pch = 16, col = "darkgray",
@@ -323,7 +320,16 @@ regression_table <- tidy(best_model, conf.int = TRUE, exponentiate = TRUE) %>%
   )
 print(regression_table)
 
-
+expected_terms <- c(
+  "(Intercept)",
+  "coupon_discount",
+  "delivery_charges",
+  "distance_to_nearest_warehouse",
+  "seasonSpring",
+  "seasonSummer",
+  "seasonWinter",
+  "is_expedited_deliveryTRUE"
+)
 
 plot_data <- tidy(best_model, conf.int = TRUE, exponentiate = TRUE) %>%
   filter(term != "(Intercept)") %>%
