@@ -169,7 +169,9 @@ ggplot(new_data,aes(x = is_expedited_delivery,fill = is_happy_customer)) +geom_b
   cat("Khoảng tin cậy 95% của sự chênh lệch: \n")
   data.frame(ci_lower=ci_lower, ci_upper=ci_upper)
 
-anova_order <- aov(order_total ~ season * coupon_discount,data = new_data)
+new_data$coupon_discount_factor <- as.factor(new_data$coupon_discount)  
+
+anova_order <- aov(order_total ~ season * coupon_discount_factor,data = new_data)
 residuals_order <- residuals(anova_order)
 
 cat("\n[1] ĐÁNH GIÁ TÍNH ĐỘC LẬP:\n")
@@ -187,18 +189,17 @@ print(shapiro.test(residuals_order))
 qqnorm(residuals_order, main = "Q-Q Plot: Kiểm tra Tính chuẩn của phần dư")
 qqline(residuals_order, col = "blue", lwd = 2)
 
-new_data$season <- as.factor(new_data$season)
-new_data$coupon_discount <- as.factor(new_data$coupon_discount)
+
 cat("\n[3] ĐÁNH GIÁ TÍNH ĐỒNG NHẤT PHƯƠNG SAI (Levene Test):\n")
 
 cat("- Kiểm tra cho nhóm Mùa (season):\n")
-print(leveneTest(order_total ~ season,data = new_data))
+print(leveneTest(order_total ~ season, data = new_data))
 
 cat("- Kiểm tra cho nhóm Chiết khấu (coupon_discount):\n")
-print(leveneTest(order_total ~ coupon_discount,data = new_data))
+print(leveneTest(order_total ~ coupon_discount_factor, data = new_data))
 
 cat("- Kiểm tra chéo (Mùa x Chiết khấu):\n")
-print(leveneTest(order_total ~ interaction(season, coupon_discount),data = new_data))
+print(leveneTest(order_total ~ interaction(season, coupon_discount_factor), data = new_data))
 
 boxplot(
   order_total ~ season,
@@ -210,7 +211,7 @@ boxplot(
 )
 
 boxplot(
-  order_total ~ coupon_discount,
+  order_total ~ coupon_discount_factor,
   data = new_data,
   col = "lightgreen",
   main = "order_total by Coupon Discount",
@@ -219,7 +220,7 @@ boxplot(
 )
 
 boxplot(
-  order_total ~ interaction(season, coupon_discount),
+  order_total ~ interaction(season, coupon_discount_factor),
   data = new_data,
   col = "lightpink",
   main = "order_total by Season and Coupon Discount",
@@ -228,13 +229,12 @@ boxplot(
   las = 2
 )
 
-anova_order <- aov(order_total ~ season * coupon_discount,data = new_data)
+anova_order <- aov(order_total ~ season * coupon_discount_factor, data = new_data)
 
 summary(anova_order)
 
-tukey_discount <- TukeyHSD(anova_order,which = "coupon_discount"                             )
+tukey_discount <- TukeyHSD(anova_order, which = "coupon_discount_factor")
 print(tukey_discount)
-
 plot(
   tukey_discount,
   las = 1,
@@ -242,6 +242,7 @@ plot(
 )
 
 set.seed(123) 
+new_data$season <- relevel(new_data$season, ref = "Autumn")
 train_index <- sample(1:nrow(new_data), size = round(0.8 * nrow(new_data)))
 train_data  <- new_data[train_index, ]
 test_data   <- new_data[-train_index, ]
@@ -309,16 +310,15 @@ cat("Hệ số is_expedited_deliveryTRUE:", beta_expedited, "\n")
 
 regression_table <- tidy(best_model, conf.int = TRUE, exponentiate = TRUE) %>%
   mutate(
-    term = case_when(
-      term == "(Intercept)" ~ "Intercept",
-      term == "coupon_discount" ~ "Mức giảm giá",
-      term == "delivery_charges" ~ "Phí vận chuyển",
-      term == "distance_to_nearest_warehouse" ~ "Khoảng cách kho",
-      term == "seasonSpring" ~ "Mùa Xuân",
-      term == "seasonSummer" ~ "Mùa Hạ",
-      term == "seasonWinter" ~ "Mùa Đông",
-      term == "is_expedited_deliveryTRUE" ~ "Giao hàng nhanh",
-      TRUE ~ term 
+    term = c(
+      "Intercept",
+      "coupon_discount",
+      "delivery_charges",
+      "distance_to_nearest_warehouse",
+      "seasonSpring",
+      "seasonSummer",
+      "seasonWinter",
+      "is_expedited_deliveryTRUE"
     )
   )
 print(regression_table)
