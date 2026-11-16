@@ -6,20 +6,16 @@ library(tidyverse)
 library(broom)
 library(knitr)
 
-# 1. Đọc dữ liệu từ file clean_data.csv (484 quan sát đã tiền xử lý)
 new_data <- read_csv("C:/Users/Tom/Documents/new_data.csv")
 head(new_data, 10)
 str(new_data)
 
-# 2. Trích xuất các biến cần thiết vào clean_data
 clean_data <- new_data[, c("season", "order_price", "coupon_discount", "delivery_charges",
                            "order_total", "distance_to_nearest_warehouse", 
                            "is_expedited_delivery", "is_happy_customer")]
 
-# 3. Kiểm tra nhanh đảm bảo không có giá trị khuyết (NA)
 colSums(is.na(clean_data))
 
-# 4. Hàm lọc giá trị ngoại lai theo quy tắc IQR (1.5 * IQR)
 remove_iqr_outliers <- function(df, col_name) {
   Q1 <- quantile(df[[col_name]], 0.25, na.rm = TRUE)
   Q3 <- quantile(df[[col_name]], 0.75, na.rm = TRUE)
@@ -34,7 +30,6 @@ remove_iqr_outliers <- function(df, col_name) {
   return(df[!outliers, ])
 }
 
-# 5. Lọc tiếp các ngoại lai còn lại (order_price đã lọc ở file trước nên sẽ loại 0 dòng)
 clean_data <- remove_iqr_outliers(clean_data, "order_price")
 clean_data <- remove_iqr_outliers(clean_data, "delivery_charges")
 clean_data <- remove_iqr_outliers(clean_data, "distance_to_nearest_warehouse")
@@ -42,7 +37,6 @@ clean_data <- remove_iqr_outliers(clean_data, "coupon_discount")
 
 cat("Số lượng quan sát còn lại sau khi lọc ngoại lai:", nrow(clean_data), "\n")
 
-# 6. Định dạng lại thứ tự các bậc của biến season (vì đọc từ CSV biến factor sẽ trở về character)
 clean_data$season <- factor(clean_data$season, levels = c("Spring", "Summer", "Autumn", "Winter"))
 
 bang_mua <- table(clean_data$season)
@@ -249,7 +243,6 @@ best_model <- stepAIC(
   trace = TRUE
 )
 
-# Danh sách 8 hệ số bạn đang gán cứng trong code cũ
 expected_terms <- c(
   "(Intercept)",
   "coupon_discount",
@@ -305,15 +298,11 @@ cat("Hệ số seasonSummer:", beta_seasonSummer, "\n")
 cat("Hệ số seasonWinter:", beta_seasonWinter, "\n")
 cat("Hệ số is_expedited_deliveryTRUE:", beta_expedited, "\n")
 
-
-# Danh sách thực tế từ best_model
 actual_terms <- names(coef(best_model))
 
-# Kiểm tra biến bị thiếu (có trong code cũ nhưng stepAIC đã loại bỏ)
 cat("Biến bị stepAIC loại bỏ (thiếu so với code cũ):", 
     setdiff(expected_terms, actual_terms), "\n")
 
-# Kiểm tra biến bị dư (stepAIC giữ lại nhưng chưa có trong code cũ)
 cat("Biến được stepAIC giữ thêm (dư so với code cũ):", 
     setdiff(actual_terms, expected_terms), "\n")
 
@@ -333,8 +322,6 @@ regression_table <- tidy(best_model, conf.int = TRUE, exponentiate = TRUE) %>%
     )
   )
 print(regression_table)
-
-# --- NỐI TIẾP PHẦN VẼ BIỂU ĐỒ & KIỂM TRA MÔ HÌNH TỪ FILE CŨ ---
 
 plot_data <- tidy(best_model, conf.int = TRUE, exponentiate = TRUE) %>%
   filter(term != "(Intercept)") %>%
@@ -370,7 +357,6 @@ ggplot(plot_data, aes(x = estimate, y = term_label)) +
 vif_values <- vif(best_model)
 print(vif_values)
 
-# Đặt lại khung đồ họa về 1x1 trước khi vẽ Cook's Distance
 par(mfrow = c(1, 1))
 cooks_d <- cooks.distance(best_model)
 threshold <- 4 / nrow(train_data)
