@@ -136,40 +136,43 @@ boxplot(order_total ~ is_happy_customer, data = new_data,
 
 ggplot(new_data,aes(x = is_expedited_delivery,fill = is_happy_customer)) +geom_bar(position = "fill") +scale_y_continuous(labels = scales::percent)
 
-  cat("\n--- 2.2.1 ƯỚC LƯỢNG KHOẢNG CHO TỶ LỆ HÀI LÒNG ---\n")
-  n <- nrow(new_data)
-  f <- mean(new_data$is_happy_customer)
-  z <- qnorm(0.975)
-  se <- sqrt(f * (1 - f) / n)
-  data.frame(n=n,f=f,z=z, se=se)
-  Lower <- f - z * se
-  Upper <- f + z * se
-  data.frame(Ty_le_hai_long =f,Lower = Lower,Upper = Upper)
+cat("\n--- 2.2.1 ƯỚC LƯỢNG KHOẢNG CHO TỶ LỆ HÀI LÒNG ---\n")
+n <- nrow(new_data)
+f <- mean(new_data$is_happy_customer)
+z <- qnorm(0.975)
+se <- sqrt(f * (1 - f) / n)
+data.frame(n=n,f=f,z=z, se=se)
+Lower <- f - z * se
+Upper <- f + z * se
+data.frame(Ty_le_hai_long =f,Lower = Lower,Upper = Upper)
 
-  cat("\n2.2.2 KIỂM ĐỊNH SO SÁNH TỶ LỆ HÀI LÒNG\n")
-  x1 <- bang_cheo_1["TRUE", "TRUE"]   
-  n1 <- sum(bang_cheo_1["TRUE", ])    
-  p1 <- x1 / n1                       
-  x2 <- bang_cheo_1["FALSE", "TRUE"]  
-  n2 <- sum(bang_cheo_1["FALSE", ])   
-  p2 <- x2 / n2
-  data.frame(x1=x1, n1=n1,p1=p1,x2=x2,n2=n2,p2=p2)
-  p_pool <- (x1 + x2) / (n1 + n2)
-  SE <- sqrt(p_pool * (1 - p_pool) * (1/n1 + 1/n2))
-  Z_stat <- (p1 - p2) / SE
-  p_value <- 2 * (1 - pnorm(abs(Z_stat)))
-  SE_ci <- sqrt((p1 * (1 - p1) / n1) + (p2 * (1 - p2) / n2))
-  margin_of_error <- qnorm(0.975) * SE_ci
-  ci_lower <- (p1 - p2) - margin_of_error
-  ci_upper <- (p1 - p2) + margin_of_error
-  cat("Tỷ lệ hài lòng giao nhanh (p1):", round(p1, 4), "\n")
-  cat("Tỷ lệ hài lòng giao thường (p2):", round(p2, 4), "\n")
-  cat("Giá trị thống kê Z:", round(Z_stat, 4), "\n")
-  cat("P-value:", p_value, "\n")
-  cat("Khoảng tin cậy 95% của sự chênh lệch: \n")
-  data.frame(ci_lower=ci_lower, ci_upper=ci_upper)
+cat("\n2.2.2 KIỂM ĐỊNH SO SÁNH TỶ LỆ HÀI LÒNG\n")
+x1 <- bang_cheo_1["TRUE", "TRUE"]   
+n1 <- sum(bang_cheo_1["TRUE", ])    
+p1 <- x1 / n1                       
+x2 <- bang_cheo_1["FALSE", "TRUE"]  
+n2 <- sum(bang_cheo_1["FALSE", ])   
+p2 <- x2 / n2
+data.frame(x1=x1, n1=n1,p1=p1,x2=x2,n2=n2,p2=p2)
+p_pool <- (x1 + x2) / (n1 + n2)
+SE <- sqrt(p_pool * (1 - p_pool) * (1/n1 + 1/n2))
+Z_stat <- (p1 - p2) / SE
+p_value <- 2 * (1 - pnorm(abs(Z_stat)))
+SE_ci <- sqrt((p1 * (1 - p1) / n1) + (p2 * (1 - p2) / n2))
+margin_of_error <- qnorm(0.975) * SE_ci
+ci_lower <- (p1 - p2) - margin_of_error
+ci_upper <- (p1 - p2) + margin_of_error
+cat("Tỷ lệ hài lòng giao nhanh (p1):", round(p1, 4), "\n")
+cat("Tỷ lệ hài lòng giao thường (p2):", round(p2, 4), "\n")
+cat("Giá trị thống kê Z:", round(Z_stat, 4), "\n")
+cat("P-value:", p_value, "\n")
+cat("Khoảng tin cậy 95% của sự chênh lệch: \n")
+data.frame(ci_lower=ci_lower, ci_upper=ci_upper)
 
 new_data$coupon_discount_factor <- as.factor(new_data$coupon_discount)  
+
+anova_order <- aov(order_total ~ season * coupon_discount_factor,data = new_data)
+residuals_order <- residuals(anova_order)
 
 cat("\n[1] ĐÁNH GIÁ TÍNH ĐỘC LẬP:\n")
 par(mfrow = c(1, 1))
@@ -320,16 +323,7 @@ regression_table <- tidy(best_model, conf.int = TRUE, exponentiate = TRUE) %>%
   )
 print(regression_table)
 
-expected_terms <- c(
-  "(Intercept)",
-  "coupon_discount",
-  "delivery_charges",
-  "distance_to_nearest_warehouse",
-  "seasonSpring",
-  "seasonSummer",
-  "seasonWinter",
-  "is_expedited_deliveryTRUE"
-)
+
 
 plot_data <- tidy(best_model, conf.int = TRUE, exponentiate = TRUE) %>%
   filter(term != "(Intercept)") %>%
